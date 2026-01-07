@@ -45,9 +45,9 @@ jobs:
         run: |
           CVEC_COMMIT=${{ github.event.inputs.cvec_commit || 'main' }}
           # Install cvec from specific commit
-          uv pip install "cvec @ git+https://github.com/${{ github.repository_owner }}/cvec.git@${CVEC_COMMIT}"
+          # uv pip install "cvec @ git+https://github.com/${{ github.repository_owner }}/cvec.git@${CVEC_COMMIT}"
           # Install cvec-db
-          uv pip install -e .
+          uv tool install -e .
           
       - name: Build database
         run: |
