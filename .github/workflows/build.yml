@@ -38,18 +38,21 @@ jobs:
       - name: Set up Python
         run: uv python install ${{ env.PYTHON_VERSION }}
         
+      - name: Create virtual environment
+        run: uv venv
+        
       - name: Install dependencies
         run: |
           CVEC_COMMIT=${{ github.event.inputs.cvec_commit || 'main' }}
           # Install cvec from specific commit
-          uv pip install --system "cvec @ git+https://github.com/${{ github.repository_owner }}/cvec.git@${CVEC_COMMIT}"
+          uv pip install "cvec @ git+https://github.com/${{ github.repository_owner }}/cvec.git@${CVEC_COMMIT}"
           # Install cvec-db
-          uv pip install --system -e .
+          uv pip install -e .
           
       - name: Build database
         run: |
           YEARS=${{ github.event.inputs.years || '10' }}
-          cvec-db build --years $YEARS --output data
+          uv run cvec-db build --years $YEARS --output data
           
       - name: List generated files
         run: |
