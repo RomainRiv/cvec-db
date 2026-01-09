@@ -7,7 +7,7 @@ requires-python = ">=3.12"
 license = "MIT"
 keywords = ["cve", "security", "vulnerability", "database"]
 dependencies = [
-    "cvec @ git+https://github.com/RomainRiv/cvec.git@main",
+    "cvec @ git+https://github.com/RomainRiv/cvec.git@a0e6d7a81ec24813a61bba5eacf295c8a166a9c0",
     "typer>=0.16.0",
     "polars>=1.31.0",
 ]
