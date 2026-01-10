@@ -92,6 +92,7 @@ jobs:
             - `cve_references.parquet` - References
             - `cve_credits.parquet` - Credits
             - `cve_tags.parquet` - Tags
+            - `cve_embeddings.parquet` - Embeddings for semantic search
             - `manifest.json` - Metadata and checksums
             
             ## Usage

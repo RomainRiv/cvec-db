@@ -77,13 +77,17 @@ def build(
     skip_download: bool = typer.Option(
         False, "--skip-download", help="Skip downloading, use existing JSON files"
     ),
+    generate_embeddings: bool = typer.Option(
+        True, "--embeddings/--no-embeddings", help="Generate embeddings for semantic search"
+    ),
 ) -> None:
     """Build the CVE database: download JSON files and extract to parquet.
     
     This is the main command for building the database. It:
     1. Downloads CVE JSON files from GitHub cvelistV5 repository
     2. Extracts the data into normalized parquet files
-    3. Creates a manifest file with checksums for verification
+    3. Generates embeddings for semantic search (optional)
+    4. Creates a manifest file with checksums for verification
     """
     output_dir = output_dir or Path("data")
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -105,6 +109,21 @@ def build(
     
     stats = result.get("stats", {})
     typer.echo(f"Extracted {stats.get('cves', 0)} CVEs")
+    
+    if generate_embeddings:
+        typer.echo("Generating embeddings for semantic search...")
+        try:
+            from cvec.services.embeddings import EmbeddingsService
+            
+            embeddings_service = EmbeddingsService(config=config)
+            embedding_result = embeddings_service.extract_embeddings(
+                output_path=output_dir / "cve_embeddings.parquet"
+            )
+            typer.echo(f"Generated {embedding_result['count']} embeddings")
+            stats["embeddings"] = embedding_result["count"]
+        except ImportError as e:
+            typer.echo(f"Warning: Could not generate embeddings: {e}", err=True)
+            typer.echo("Install with: pip install sentence-transformers", err=True)
     
     typer.echo("Creating manifest...")
     manifest_path = create_manifest(output_dir, stats)
@@ -168,6 +187,46 @@ def extract_parquet(
 
 
 @app.command()
+def generate_embeddings(
+    data_dir: Optional[Path] = typer.Option(
+        None, "--data-dir", "-d", help="Directory containing parquet files"
+    ),
+    output: Optional[Path] = typer.Option(
+        None, "--output", "-o", help="Output path for embeddings parquet file"
+    ),
+) -> None:
+    """Generate embeddings for existing CVE parquet files.
+    
+    This reads the CVE and description parquet files and generates
+    embeddings for semantic search capabilities.
+    """
+    data_dir = data_dir or Path("data")
+    output_path = output or data_dir / "cve_embeddings.parquet"
+    
+    if not data_dir.exists():
+        typer.echo(f"Error: Directory {data_dir} does not exist", err=True)
+        raise typer.Exit(1)
+    
+    config = Config()
+    config.data_dir = data_dir
+    
+    typer.echo("Generating embeddings for semantic search...")
+    try:
+        from cvec.services.embeddings import EmbeddingsService
+        
+        embeddings_service = EmbeddingsService(config=config)
+        embedding_result = embeddings_service.extract_embeddings(
+            output_path=output_path
+        )
+        typer.echo(f"Generated {embedding_result['count']} embeddings")
+        typer.echo(f"Saved to: {embedding_result['path']}")
+    except ImportError as e:
+        typer.echo(f"Error: Could not generate embeddings: {e}", err=True)
+        typer.echo("Install with: pip install sentence-transformers", err=True)
+        raise typer.Exit(1)
+
+
+@app.command()
 def manifest(
     data_dir: Optional[Path] = typer.Option(
         None, "--data-dir", "-d", help="Directory containing parquet files"
@@ -191,6 +250,13 @@ def manifest(
         import polars as pl
         df = pl.read_parquet(cves_parquet)
         stats["cves"] = len(df)
+    
+    # Check for embeddings
+    embeddings_parquet = data_dir / "cve_embeddings.parquet"
+    if embeddings_parquet.exists():
+        import polars as pl
+        df = pl.read_parquet(embeddings_parquet)
+        stats["embeddings"] = len(df)
     
     manifest_path = create_manifest(data_dir, stats)
     typer.echo(f"Manifest created: {manifest_path}")
