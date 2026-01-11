@@ -47,13 +47,18 @@ jobs:
           # Install cvec from specific commit
           # uv pip install "cvec @ git+https://github.com/${{ github.repository_owner }}/cvec.git@${CVEC_COMMIT}"
           # Install cvec-db
-          uv tool install -e .
+          uv tool install "cvec @ git+https://github.com/${{ github.repository_owner }}/cvec.git@7053e40f8a077d83a78d78ce2f6c7534dcd18a6a"
+          # uv tool install -e .
           
       - name: Build database
         run: |
           YEARS=${{ github.event.inputs.years || '10' }}
-          uv run cvec-db build --years $YEARS --output data
-          
+          # uv run cvec-db build --years $YEARS --output data
+          cvec db build download-json --years $YEARS -d data/
+          cvec db build extract-parquet --years $YEARS -d data/
+          cvec db extract-embeddings -d data/ -v 
+          cvec db build create-manifest -d data/ -s "TMP CI"
+
       - name: List generated files
         run: |
           ls -lh data/
