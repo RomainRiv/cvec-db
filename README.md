@@ -10,7 +10,7 @@ This repository provides the infrastructure for building and distributing pre-bu
 
 1. **Daily builds**: A GitHub Action runs daily to download the latest CVE data from the [cvelistV5](https://github.com/CVEProject/cvelistV5) repository
 2. **Extraction**: The data is extracted into normalized parquet files using the `cvec` library
-3. **Embeddings**: Semantic embeddings are generated using sentence-transformers (all-MiniLM-L6-v2 model) for semantic search (this currently takes over an hour)
+3. **Embeddings**: Semantic embeddings are generated using sentence-transformers (all-MiniLM-L6-v2 model) for semantic search (this currently takes over an hour, this needs to be optimized someday)
 4. **Manifest**: A manifest file is generated with checksums for integrity verification
 5. **Release**: The parquet files are published as a GitHub Release
 
