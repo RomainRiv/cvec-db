@@ -2,85 +2,96 @@ name: Build CVE Database
 
 on:
   schedule:
-    # Run daily at 6 AM UTC
-    - cron: '0 4 * * *'
+    # Run daily at 6 AM Paris time is not UTC; this is 04:00 UTC.
+    - cron: "0 4 * * *"
   workflow_dispatch:
     inputs:
       years:
-        description: 'Number of years to include'
+        description: "Number of years to include"
         required: false
-        default: '10'
-        type: string
+        type: number
+        default: 10
       release_type:
-        description: 'Release type: official, prerelease or draft'
+        description: "Release type"
         required: false
-        default: 'official'
-        type: string
+        type: choice
+        default: official
+        options:
+          - official
+          - prerelease
+          - draft
 
 env:
-  PYTHON_VERSION: '3.12'
+  PYTHON_VERSION: "3.12"
 
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    
+
+    # Set defaults that also work when triggered by schedule
+    env:
+      YEARS: ${{ github.event_name == 'workflow_dispatch' && inputs.years || 10 }}
+      RELEASE_TYPE: ${{ github.event_name == 'workflow_dispatch' && inputs.release_type || 'official' }}
+
     steps:
       - name: Checkout cvec-db
         uses: actions/checkout@v4
-        
+
       - name: Install uv
         uses: astral-sh/setup-uv@v4
         with:
           version: "latest"
-        
+
       - name: Install dependencies
         run: |
           uv tool install "cvec[semantic] @ git+https://github.com/${{ github.repository_owner }}/cvec.git@7053e40f8a077d83a78d78ce2f6c7534dcd18a6a"
-          
+
       - name: Build database
         run: |
-          YEARS=${{ github.event.inputs.years || '10' }}
-          cvec db build download-json --years $YEARS -d data/
-          cvec db build extract-parquet --years $YEARS -d data/
-          cvec db build extract-embeddings -d data/ -v 
+          echo "YEARS=${YEARS}"
+          cvec db build download-json --years "${YEARS}" -d data/
+          cvec db build extract-parquet --years "${YEARS}" -d data/
+          cvec db build extract-embeddings -d data/ -v
           cvec db build create-manifest -d data/ -s "TMP CI"
 
       - name: List generated files
         run: |
           ls -lh data/
           cat data/manifest.json
-          
+
       - name: Create release tag
         id: tag
         run: |
           DATE=$(date -u +"%Y%m%d")
-          echo "tag=v${DATE}" >> $GITHUB_OUTPUT
-          echo "date=${DATE}" >> $GITHUB_OUTPUT
-          
+          echo "tag=v${DATE}" >> "$GITHUB_OUTPUT"
+          echo "date=${DATE}" >> "$GITHUB_OUTPUT"
+
       - name: Delete existing release with same tag (if any)
         run: |
-          gh release delete ${{ steps.tag.outputs.tag }} --yes || true
+          gh release delete "${{ steps.tag.outputs.tag }}" --yes --cleanup-tag || true
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Determine release flags
         id: release_flags
         run: |
-          RELEASE_TYPE=${{ github.event.inputs.release_type || 'official' }}
-          if [ "$RELEASE_TYPE" = "draft" ]; then
-            echo "draft=true" >> $GITHUB_OUTPUT
-            echo "prerelease=false" >> $GITHUB_OUTPUT
-          elif [ "$RELEASE_TYPE" = "prerelease" ]; then
-            echo "draft=false" >> $GITHUB_OUTPUT
-            echo "prerelease=true" >> $GITHUB_OUTPUT
+          echo "release_type=${RELEASE_TYPE}" >> "$GITHUB_OUTPUT"
+          if [ "${RELEASE_TYPE}" = "draft" ]; then
+            echo "draft=true" >> "$GITHUB_OUTPUT"
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+            echo "make_latest=false" >> "$GITHUB_OUTPUT"
+          elif [ "${RELEASE_TYPE}" = "prerelease" ]; then
+            echo "draft=false" >> "$GITHUB_OUTPUT"
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+            echo "make_latest=false" >> "$GITHUB_OUTPUT"
           else
-            echo "draft=false" >> $GITHUB_OUTPUT
-            echo "prerelease=false" >> $GITHUB_OUTPUT
+            echo "draft=false" >> "$GITHUB_OUTPUT"
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+            echo "make_latest=true" >> "$GITHUB_OUTPUT"
           fi
-          echo "release_type=$RELEASE_TYPE" >> $GITHUB_OUTPUT
-          
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -88,9 +99,11 @@ jobs:
           name: CVE Database ${{ steps.tag.outputs.date }}
           body: |
             Automated CVE database release.
-            
+
             Generated at: ${{ steps.tag.outputs.date }}
-            
+            Years included: ${{ env.YEARS }}
+            Release type: ${{ steps.release_flags.outputs.release_type }}
+
             ## Files included
             - `cves.parquet` - Core CVE metadata
             - `cve_descriptions.parquet` - CVE descriptions
@@ -103,7 +116,7 @@ jobs:
             - `cve_tags.parquet` - Tags
             - `cve_embeddings.parquet` - Embeddings for semantic search
             - `manifest.json` - Metadata and checksums
-            
+
             ## Usage
             Download with cvec tool:
             ```bash
@@ -114,6 +127,6 @@ jobs:
             data/manifest.json
           draft: ${{ steps.release_flags.outputs.draft }}
           prerelease: ${{ steps.release_flags.outputs.prerelease }}
-          make_latest: true
+          make_latest: ${{ steps.release_flags.outputs.make_latest }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
