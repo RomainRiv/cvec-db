@@ -46,7 +46,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv tool install "cvec[semantic] @ git+https://github.com/${{ github.repository_owner }}/cvec.git@7053e40f8a077d83a78d78ce2f6c7534dcd18a6a"
+          uv tool install "cvec[semantic] @ git+https://github.com/${{ github.repository_owner }}/cvec.git@3a41f3dfb394cf715a0914c7c08c518084edc965"
 
       - name: Build database
         run: |
@@ -54,7 +54,7 @@ jobs:
           cvec db build download-json --years "${YEARS}" -d data/
           cvec db build extract-parquet --years "${YEARS}" -d data/
           cvec db build extract-embeddings -d data/ -v
-          cvec db build create-manifest -d data/ -s "TMP CI"
+          cvec db build create-manifest -d data/ -s "TMP CI" --release-status "${RELEASE_TYPE}"
 
       - name: List generated files
         run: |
