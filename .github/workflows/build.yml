@@ -11,11 +11,6 @@ on:
         required: false
         default: '10'
         type: string
-      cvec_commit:
-        description: 'Specific commit SHA from cvec repository'
-        required: false
-        default: 'main'
-        type: string
 
 env:
   PYTHON_VERSION: '3.12'
@@ -37,7 +32,6 @@ jobs:
         
       - name: Install dependencies
         run: |
-          CVEC_COMMIT=${{ github.event.inputs.cvec_commit || 'main' }}
           uv tool install "cvec[semantic] @ git+https://github.com/${{ github.repository_owner }}/cvec.git@7053e40f8a077d83a78d78ce2f6c7534dcd18a6a"
           
       - name: Build database
