@@ -36,50 +36,15 @@ The parquet files include a `manifest.json` with a `schema_version` field. The c
 
 ## Local Development
 
-```bash
-# Install dependencies (cvec will be installed from GitHub)
-uv sync
-
-# Or install a specific commit of cvec
-uv pip install "cvec @ git+https://github.com/RomainRiv/cvec.git@<commit-sha>"
-
-# Build database locally (includes embeddings)
-cvec-db build --years 10 --output data
-
-# Build without embeddings
-cvec-db build --years 10 --output data --no-embeddings
-
-# Or step by step:
-cvec-db download-json --years 10
-cvec-db extract-parquet --output data
-cvec-db generate-embeddings --data-dir data
-
-# Generate embeddings separately for existing parquet files
-cvec-db generate-embeddings --data-dir data
-```
+🚧 TODO 🚧
 
 ## Manual Release Trigger
 
-You can manually trigger a database build from GitHub Actions:
-1. Go to the Actions tab
-2. Select "Build CVE Database" workflow
-3. Click "Run workflow"
-4. Optionally specify:
-   - Number of years to include (default: 10)
-   - Specific cvec commit SHA (default: main branch)
+🚧 TODO 🚧
 
 ## Usage with cvec
 
-Users of the cvec tool can fetch the latest database with:
-
-```bash
-# Download latest parquet files
-cvec db update
-
-# Or build locally (slower, but doesn't depend on this repo)
-cvec db download-json
-cvec db extract-parquet
-```
+🚧 TODO 🚧
 
 ## License
 
