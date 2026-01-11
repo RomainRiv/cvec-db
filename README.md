@@ -10,8 +10,9 @@ This repository provides the infrastructure for building and distributing pre-bu
 
 1. **Daily builds**: A GitHub Action runs daily to download the latest CVE data from the [cvelistV5](https://github.com/CVEProject/cvelistV5) repository
 2. **Extraction**: The data is extracted into normalized parquet files using the `cvec` library
-3. **Manifest**: A manifest file is generated with checksums for integrity verification
-4. **Release**: The parquet files are published as a GitHub Release
+3. **Embeddings**: Semantic embeddings are generated using sentence-transformers (all-MiniLM-L6-v2 model) for semantic search (this currently takes over an hour, this needs to be optimized someday)
+4. **Manifest**: A manifest file is generated with checksums for integrity verification
+5. **Release**: The parquet files are published as a GitHub Release
 
 ## Schema Versioning
 
@@ -30,47 +31,20 @@ The parquet files include a `manifest.json` with a `schema_version` field. The c
 | `cve_references.parquet` | References with tags |
 | `cve_credits.parquet` | Credits/acknowledgments |
 | `cve_tags.parquet` | CVE-level tags |
+| `cve_embeddings.parquet` | Embeddings for semantic search (384-dimensional vectors) |
 | `manifest.json` | Metadata, statistics, and checksums |
 
 ## Local Development
 
-```bash
-# Install dependencies (cvec will be installed from GitHub)
-uv sync
-
-# Or install a specific commit of cvec
-uv pip install "cvec @ git+https://github.com/RomainRiv/cvec.git@<commit-sha>"
-
-# Build database locally
-cvec-db build --years 10 --output data
-
-# Or step by step:
-cvec-db download-json --years 10
-cvec-db extract-parquet --output data
-```
+🚧 TODO 🚧
 
 ## Manual Release Trigger
 
-You can manually trigger a database build from GitHub Actions:
-1. Go to the Actions tab
-2. Select "Build CVE Database" workflow
-3. Click "Run workflow"
-4. Optionally specify:
-   - Number of years to include (default: 10)
-   - Specific cvec commit SHA (default: main branch)
+🚧 TODO 🚧
 
 ## Usage with cvec
 
-Users of the cvec tool can fetch the latest database with:
-
-```bash
-# Download latest parquet files
-cvec db update
-
-# Or build locally (slower, but doesn't depend on this repo)
-cvec db download-json
-cvec db extract-parquet
-```
+🚧 TODO 🚧
 
 ## License
 

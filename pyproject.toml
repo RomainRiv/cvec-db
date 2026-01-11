@@ -7,13 +7,10 @@ requires-python = ">=3.12"
 license = "MIT"
 keywords = ["cve", "security", "vulnerability", "database"]
 dependencies = [
-    "cvec @ git+https://github.com/RomainRiv/cvec.git@a0e6d7a81ec24813a61bba5eacf295c8a166a9c0",
+    "cvec[semantic] @ git+https://github.com/RomainRiv/cvec.git@cd63388a098981f4e1f2bb32ce41ee83d56c4a41",
     "typer>=0.16.0",
     "polars>=1.31.0",
 ]
-
-[project.scripts]
-cvec-db = "cvec_db.cli:main"
 
 [tool.uv]
 package = true
@@ -24,3 +21,6 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/cvec_db"]
+
+[tool.hatch.metadata]
+allow-direct-references = true
