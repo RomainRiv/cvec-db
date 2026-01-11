@@ -61,48 +61,47 @@ jobs:
           ls -lh data/
           cat data/manifest.json
 
-      - name: Create release tag
-        id: tag
+      - name: Configure release
+        id: release
         run: |
           DATE=$(date -u +"%Y%m%d")
-          echo "tag=v${DATE}" >> "$GITHUB_OUTPUT"
           echo "date=${DATE}" >> "$GITHUB_OUTPUT"
-
-      - name: Delete existing release with same tag (if any)
-        run: |
-          gh release delete "${{ steps.tag.outputs.tag }}" --yes --cleanup-tag || true
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Determine release flags
-        id: release_flags
-        run: |
           echo "release_type=${RELEASE_TYPE}" >> "$GITHUB_OUTPUT"
+          
           if [ "${RELEASE_TYPE}" = "draft" ]; then
+            echo "tag=v${DATE}-draft" >> "$GITHUB_OUTPUT"
             echo "draft=true" >> "$GITHUB_OUTPUT"
             echo "prerelease=false" >> "$GITHUB_OUTPUT"
             echo "make_latest=false" >> "$GITHUB_OUTPUT"
           elif [ "${RELEASE_TYPE}" = "prerelease" ]; then
+            echo "tag=v${DATE}-pre" >> "$GITHUB_OUTPUT"
             echo "draft=false" >> "$GITHUB_OUTPUT"
             echo "prerelease=true" >> "$GITHUB_OUTPUT"
             echo "make_latest=false" >> "$GITHUB_OUTPUT"
           else
+            echo "tag=v${DATE}" >> "$GITHUB_OUTPUT"
             echo "draft=false" >> "$GITHUB_OUTPUT"
             echo "prerelease=false" >> "$GITHUB_OUTPUT"
             echo "make_latest=true" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Delete existing release with same tag (if any)
+        run: |
+          gh release delete "${{ steps.release.outputs.tag }}" --yes --cleanup-tag || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.tag.outputs.tag }}
-          name: CVE Database ${{ steps.tag.outputs.date }}
+          tag_name: ${{ steps.release.outputs.tag }}
+          name: CVE Database ${{ steps.release.outputs.date }}
           body: |
             Automated CVE database release.
 
-            Generated at: ${{ steps.tag.outputs.date }}
+            Generated at: ${{ steps.release.outputs.date }}
             Years included: ${{ env.YEARS }}
-            Release type: ${{ steps.release_flags.outputs.release_type }}
+            Release type: ${{ steps.release.outputs.release_type }}
 
             ## Files included
             - `cves.parquet` - Core CVE metadata
@@ -125,8 +124,8 @@ jobs:
           files: |
             data/*.parquet
             data/manifest.json
-          draft: ${{ steps.release_flags.outputs.draft }}
-          prerelease: ${{ steps.release_flags.outputs.prerelease }}
-          make_latest: ${{ steps.release_flags.outputs.make_latest }}
+          draft: ${{ steps.release.outputs.draft }}
+          prerelease: ${{ steps.release.outputs.prerelease }}
+          make_latest: ${{ steps.release.outputs.make_latest }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
